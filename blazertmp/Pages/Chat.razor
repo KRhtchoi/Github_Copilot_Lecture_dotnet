@@ -1,0 +1,59 @@
+@page "/chat"
+
+<h3>ChatGPT 스타일 채팅</h3>
+<div style="max-width:900px; margin:0 auto; height:90vh; display:flex; flex-direction:column;">
+    <div style="flex:1; border:2px solid #888; border-radius:16px; padding:32px; background:#f5f5f5; width:100%; overflow-y:auto; min-height:300px;">
+        @foreach (var msg in Messages)
+        {
+            <div style="margin-bottom:18px;">
+                <b>@msg.Role:</b>
+                <span>@msg.Text</span>
+            </div>
+        }
+    </div>
+    <div style="margin-top:24px; display:flex; gap:12px; width:100%;">
+        <textarea style="flex:1; padding:12px; font-size:1.1em; resize:none; height:120px;" @bind="UserInput" @bind:event="oninput" placeholder="메시지를 입력하세요..." @onkeydown="OnInputKeyDown"></textarea>
+        <button style="width:120px; font-size:1.1em; align-self:flex-end; height:48px;" @onclick="SendMessage">전송</button>
+    </div>
+</div>
+
+@code {
+    private string UserInput { get; set; } = "";
+    private List<Message> Messages { get; set; } = new();
+    private string[] BotReplies = new[]
+    {
+        "안녕하세요! 무엇을 도와드릴까요?",
+        "질문이 있으시면 언제든 말씀해 주세요.",
+        "오늘 날씨가 좋네요!",
+        "저는 사전 지정된 답변만 할 수 있어요.",
+        "Blazor로 채팅 UI를 만들 수 있습니다.",
+        "랜덤 답변입니다 :)"
+    };
+    private Random rnd = new();
+
+    private void SendMessage()
+    {
+        if (!string.IsNullOrWhiteSpace(UserInput))
+        {
+            Messages.Add(new Message { Role = "User", Text = UserInput });
+            var reply = BotReplies[rnd.Next(BotReplies.Length)];
+            Messages.Add(new Message { Role = "Bot", Text = reply });
+            UserInput = "";
+        }
+    }
+
+    private async Task OnInputKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey)
+        {
+            SendMessage();
+            await Task.Delay(1); // 입력창 초기화 및 포커스 유지
+        }
+    }
+
+    public class Message
+    {
+        public string Role { get; set; } = "";
+        public string Text { get; set; } = "";
+    }
+}

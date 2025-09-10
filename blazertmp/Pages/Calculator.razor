@@ -1,0 +1,47 @@
+@page "/calculator"
+
+<h3>계산기</h3>
+
+<div>
+    <input type="number" @bind="Number1" placeholder="첫 번째 숫자" />
+    <input type="number" @bind="Number2" placeholder="두 번째 숫자" />
+</div>
+<div style="margin-top:10px;">
+    <button @onclick="@(() => Calculate("+"))">+</button>
+    <button @onclick="@(() => Calculate("-"))">-</button>
+    <button @onclick="@(() => Calculate("*"))">*</button>
+    <button @onclick="@(() => Calculate("/"))">/</button>
+</div>
+<div style="margin-top:10px;">
+    <strong>결과: @Result</strong>
+</div>
+
+@code {
+    private double Number1 { get; set; }
+    private double Number2 { get; set; }
+    private string Result { get; set; } = "";
+
+    private void Calculate(string op)
+    {
+        try
+        {
+            double res = op switch
+            {
+                "+" => Number1 + Number2,
+                "-" => Number1 - Number2,
+                "*" => Number1 * Number2,
+                "/" => Number2 != 0 ? Number1 / Number2 : throw new DivideByZeroException(),
+                _ => 0
+            };
+            Result = res.ToString();
+        }
+        catch (DivideByZeroException)
+        {
+            Result = "0으로 나눌 수 없습니다.";
+        }
+        catch
+        {
+            Result = "오류 발생";
+        }
+    }
+}

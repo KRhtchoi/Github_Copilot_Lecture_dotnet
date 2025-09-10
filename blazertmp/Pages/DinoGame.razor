@@ -1,0 +1,112 @@
+@page "/dino"
+@inject IJSRuntime JS
+
+<h3>크롬 오프라인 달리기 게임</h3>
+<div style="max-width:800px; margin:40px auto;">
+    <div tabindex="0" @ref="GameDiv" @onkeydown="OnKeyDown" style="outline:none; width:800px; height:300px;">
+        <svg width="800" height="220" style="background:#f8f8f8; border:2px solid #888; border-radius:12px;">
+            <!-- Ground -->
+            <rect x="0" y="200" width="800" height="20" fill="#ccc" />
+            <!-- Dino -->
+            <rect x="@DinoX" y="@DinoY" width="30" height="40" fill="#4caf50" rx="8" />
+            <!-- Obstacle -->
+            <rect x="@ObstacleX" y="180" width="20" height="40" fill="#ff5722" rx="4" />
+        </svg>
+        <div style="margin-top:12px; font-size:1.2em;">
+            점수: <b>@Score</b>
+            @if (IsGameOver)
+            {
+                <span style="color:red; margin-left:20px;">게임 오버! <button @onclick="Restart">다시 시작</button></span>
+            }
+        </div>
+        <div style="margin-top:8px; color:#888;">스페이스바로 점프하세요! (게임 영역 클릭 후 플레이)</div>
+    </div>
+</div>
+
+@code {
+    private double DinoX = 50;
+    private double DinoY = 160;
+    private double DinoVelocity = 0;
+    private bool IsJumping = false;
+    private double Gravity = 1.2;
+    private double JumpPower = -16;
+    private double ObstacleX = 800;
+    private int Score = 0;
+    private bool IsGameOver = false;
+    private System.Timers.Timer? GameTimer;
+    private ElementReference GameDiv;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await GameDiv.FocusAsync();
+            await JS.InvokeVoidAsync("import", "./dinoPreventDefault.js");
+            await JS.InvokeVoidAsync("dinoGamePreventSpaceScroll", GameDiv);
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        StartGame();
+    }
+
+    private void StartGame()
+    {
+        DinoY = 160;
+        DinoVelocity = 0;
+        IsJumping = false;
+        ObstacleX = 800;
+        Score = 0;
+        IsGameOver = false;
+        GameTimer = new System.Timers.Timer(20);
+        GameTimer.Elapsed += (s, e) => InvokeAsync(GameLoop);
+        GameTimer.Start();
+    }
+
+    private void GameLoop()
+    {
+        if (IsGameOver) return;
+        // Dino 점프 물리
+        if (IsJumping)
+        {
+            DinoY += DinoVelocity;
+            DinoVelocity += Gravity;
+            if (DinoY >= 160)
+            {
+                DinoY = 160;
+                DinoVelocity = 0;
+                IsJumping = false;
+            }
+        }
+        // 장애물 이동
+        ObstacleX -= 8;
+        if (ObstacleX < -20)
+        {
+            ObstacleX = 800;
+            Score++;
+        }
+        // 충돌 체크
+        if (ObstacleX < DinoX + 30 && ObstacleX + 20 > DinoX && DinoY + 40 > 180)
+        {
+            IsGameOver = true;
+            GameTimer?.Stop();
+        }
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OnKeyDown(KeyboardEventArgs e)
+    {
+        if (IsGameOver) return;
+        if (e.Key == " " && !IsJumping && DinoY >= 160)
+        {
+            IsJumping = true;
+            DinoVelocity = JumpPower;
+        }
+    }
+
+    private void Restart()
+    {
+        StartGame();
+    }
+}
